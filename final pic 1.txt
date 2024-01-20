@@ -1,0 +1,120 @@
+#pragma config FOSC = HS        // Oscillator Selection bits (HS oscillator)
+
+#pragma config WDTE = OFF       // Watchdog Timer Enable bit (WDT disabled)
+
+#pragma config PWRTE = OFF      // Power-up Timer Enable bit (PWRT disabled)
+
+#pragma config BOREN = ON       // Brown-out Reset Enable bit (BOR enabled)
+
+#pragma config LVP = OFF        // Low-Voltage (Single-Supply) In-Circuit Serial Programming Enable bit (RB3/PGM pin has PGM function; low-voltage programming enabled)
+
+#pragma config CPD = OFF        // Data EEPROM Memory Code Protection bit (Data EEPROM code protection off)
+
+#pragma config WRT = OFF        // Flash Program Memory Write Enable bits (Write protection off; all program memory may be written to by EECON control)
+
+#pragma config CP = OFF         // Flash Program Memory Code Protection bit (Code protection off)
+
+#include <stdio.h>
+
+#define _XTAL_FREQ 200000000 //Crystal Frequency, used in delay
+
+#define speed 1 // Speed Range 10 to 1  10 = lowest , 1 = highest
+
+#define steps 250 // how much step it will take
+
+#define clockwise 0 // clockwise direction macro
+
+#define anti_clockwise 1 // anti clockwise direction macro
+void ms_delay(unsigned int val);
+
+int check_ldr();
+
+void full_drive (char direction);
+void main() {
+int i=0;
+       TRISB = 0x00; // Portb output
+       TRISC = 0X00; // PortC output
+       TRISD = 0XFF; // PortD input
+       TRISE = 0X00; // PortE output
+
+       PORTA = 0X00;
+       PORTB = 0X00;
+       PORTC = 0XF0;
+       PORTD = 0X00;
+       PORTE = 0X00;
+
+       ADCON1 = 0X0E; // RA0 is Analog
+
+      CCP1CON = 0x0C;  // Configure CCP1 for PWM
+
+    T2CON = 0x07;
+    // Configure Timer2 for 50Hz PWM frequency with prescaler = 16        void stepper_bullet1();
+
+
+ while (1) {
+
+         if (check_ldr()==1){
+       for (i=0;i<steps*2;i++){
+        full_drive (clockwise);} }
+
+        Delay_ms(200);
+
+
+        // Read input from RD3
+        if (PORTD & 0X08) {
+
+            CCPR1L = 0xFF;    // Adjust for servo 180-degree position
+        } else {
+            // RD0 is low, set pulse width for 0 degrees (neutral)
+            CCPR1L = 0x4F;    // Adjust for servo neutral position
+        }
+
+        // Delay for a short period to allow the servo to move
+        Delay_ms(40);
+    }
+
+    }
+
+    int check_ldr(){
+
+    if(PORTD &  0x01){ return 0 ; }
+    else {return 1; }
+    }
+
+void full_drive (char direction){
+
+    if (direction == clockwise){
+
+        PORTC = 0b10010000;
+
+        ms_delay(speed*1.9);
+
+        PORTC = 0b11000000;
+
+        ms_delay(speed*1.9);
+
+        PORTC = 0b01100000;
+
+        ms_delay(speed*1.9);
+
+        PORTC = 0b00110000;
+
+        ms_delay(speed*1.9);
+
+        PORTC = 0b10010000;
+
+        ms_delay(speed*1.9);
+
+    }
+}
+    void ms_delay(unsigned int val)
+
+{
+
+     unsigned int i,j;
+
+        for(i=0;i<val;i++)
+
+            for(j=0;j<1650;j++);
+
+}

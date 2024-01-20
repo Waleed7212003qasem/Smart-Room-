@@ -1,0 +1,206 @@
+sbit LCD_D4 at RD2_bit;
+sbit LCD_D5 at RD3_bit;
+sbit LCD_D6 at RD4_bit;
+sbit LCD_D7 at RD5_bit;
+sbit LCD_RS at RD6_bit;
+sbit LCD_EN at RD7_bit;
+
+sbit LCD_D4_Direction at TRISD2_bit;
+sbit LCD_D5_Direction at TRISD3_bit;
+sbit LCD_D6_Direction at TRISD4_bit;
+sbit LCD_D7_Direction at TRISD5_bit;
+sbit LCD_RS_Direction at TRISD6_bit;
+sbit LCD_EN_Direction at TRISD7_bit;
+
+
+
+
+
+
+
+
+
+unsigned char bit_0=1;
+unsigned char bit_1=1;
+unsigned char bit_2=1;
+unsigned char bit_3=1;
+unsigned char bit_4=1;
+unsigned int Dcntr=0;
+unsigned char temp;
+
+
+
+
+
+void delay_ms(unsigned int ms);
+void delay_us(unsigned int ms);
+void msDelay(unsigned int msCnt);
+void usDelay(unsigned int usCnt);
+int ultrasonic(void);
+void display_data_on_lcd(unsigned int ir_count, unsigned int temp_value);
+
+
+
+
+
+void ADC_init(void){
+ ADCON1=0xCE;
+ ADCON0= 0x41;
+}
+
+unsigned int read_temp(void){
+ unsigned int read;
+ ADCON0 = ADCON0 | 0x04;
+ while( ADCON0 & 0x04);
+ read=(ADRESH<<8)| ADRESL;
+ return (read*500)/1023;
+}
+
+
+
+
+void main()
+{
+int dis=0;
+int obj=0;
+TRISA=0XFB;
+TRISB=0X5F;
+TRISD=0X00;
+TRISC=0X00;
+PORTB=0X00;
+PORTA=0X00;
+PORTC=0X00;
+PORTD=0X00;
+TMR0=248;
+Lcd_Init();
+OPTION_REG = 0x07;
+INTCON=0xA0;
+T1CON = 0x10;
+msDelay(55);
+ADC_init();
+Lcd_Init();
+Lcd_Cmd(_LCD_CLEAR);
+Lcd_Cmd(_LCD_CURSOR_OFF);
+while(1)
+{
+dis=ultrasonic();
+temp = read_temp();
+temp = temp + 1;
+
+display_data_on_lcd(dis, obj);
+
+msDelay(5000);
+
+
+display_data_on_lcd(dis, temp);
+msDelay(500);
+if (dis<=35){
+portc=0x0f;
+msDelay(500);
+portc=0x0f;
+msDelay(500);
+portc=0x00;
+}
+msDelay(500);
+if (temp >=3){
+portc=0xf0;
+msDelay(500);
+portc=0xf0;
+msDelay(500);
+portc=0xf0;
+}
+msDelay(500);
+if (portb & 0x01){}
+else{obj=obj+1;}
+if (obj >=3 ){
+portc=0x3c;
+msDelay(500);
+portc=0x3c;
+msDelay(500);
+portc=0x3c;
+}
+msDelay(500);
+
+}
+}
+
+
+
+void msDelay(unsigned int msCnt)
+{
+    unsigned int ms=0;
+    unsigned int cc=0;
+    for(ms=0;ms<(msCnt);ms++)
+    {
+      for(cc=0;cc<155;cc++);//1ms
+    }
+}
+
+
+
+
+void usDelay(unsigned int usCnt)
+{
+    unsigned int us=0;
+
+    for(us=0;us<usCnt;us++)
+    {
+      asm NOP;//0.5 uS
+      asm NOP;//0.5uS
+    }
+}
+
+int ultrasonic(void){
+unsigned int Echo = 0;
+unsigned int Distance = 0;
+TMR1H=0;
+TMR1L=0;
+PORTB=PORTB|0X20;
+usDelay(10);
+PORTB=PORTB&0XDF;
+while(!(PORTB&0X40));
+T1CON = T1CON | 0X01;
+while(PORTB&0X40);
+T1CON = T1CON & 0xFE; // TIMER OFF
+Echo = (TMR1L | (TMR1H<<8)); // Reads Timer Value
+Distance = Echo/58.82; // Converts Time to Distance
+
+
+ msDelay(1000);
+
+ return Distance;
+}
+
+
+
+void delay_us(unsigned int ms){
+unsigned int i;
+while(ms--){
+for(i=0;i<12;i++) {
+asm nop;
+}
+}
+}
+
+void delay_ms(unsigned int ms){
+unsigned int i;
+while(ms--){
+for(i=0;i<238;i++) {
+delay_us(1000) ;
+}
+}
+}
+
+
+void display_data_on_lcd(unsigned int distans, unsigned int temp_value) {
+    char distans_str[6];
+    char temp_value_str[6];
+
+    IntToStr(distans, distans_str);
+    IntToStr(temp_value, temp_value_str);
+
+    Lcd_Out(1, 1, "distans :");
+    Lcd_Out(1, 12, distans_str);
+    Lcd_Out(2, 1, "Temp: ");
+    Lcd_Out(2, 7, temp_value_str);
+}
